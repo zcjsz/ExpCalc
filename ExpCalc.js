@@ -46,7 +46,11 @@ class ExpHandler {
     }
 
     getResult() {
-        return this.result;
+        if(this.valid) {
+            return this.result;
+        } else {
+            return void 0;
+        }
     }
 
     set(exp) {
@@ -71,19 +75,19 @@ class ExpHandler {
 
     // Expression minus sign processing, replace negative sign with char '#'
     // 1. minus at first character as a negative sign, example: -3*2
-    // 2. minus that follows right parenthesis or digit as a subtraction sign， then treated as a negative sign in other cases
+    // 2. minus that follows right parenthesis or digit or char as a subtraction sign， then treated as a negative sign in other cases
     // 3. Example: -3*-(-2.1*(12-5.8+7.5))-6/-10.6-11 ==> #3*#(#2.1*(12-5.8+7.5))-6/#10.6-11
     minus() {
         let out = [];
-        let alter = '#';
         for(let i=0; i<this.exp.length; i++) {
+            let temp = this.exp[i];
             if(this.exp[i]==='-') {
                 if(i===0) {
-                    out.push(alter);
-                } else if(this.exp[i-1]!==')' && isNaN(this.exp[i-1])) {
-                    out.push(alter);
-                } else {
+                    out.push('#');
+                } else if(ExpHandler.REG_MINUS.test(this.exp[i-1])) {
                     out.push('-');
+                } else {
+                    out.push('#');
                 }
             } else {
                 out.push(this.exp[i]);
@@ -123,7 +127,8 @@ class ExpHandler {
     // 出栈规则:
     // 规则1. 只要当前栈顶运算符的优先级大于或等于待处理运算符，栈顶运算符就可以出栈，放到输出队列
     // 规则2. 如果栈顶元素是左括号就停止出栈，除非待处理运算符是右括号
-    toRpn() {
+    toRpn(segment) {
+        if(segment) this.expSeg = segment;
         let stack = [];
         let out = [];
         let temp = '';
@@ -175,6 +180,7 @@ class ExpHandler {
                     } else {
                         this.valid = false;
                         out.push(str);
+                        console.log("express number is Not valid: " + str);
                     }
             }
             if(this.valid === false) break;
@@ -192,13 +198,11 @@ class ExpHandler {
     }
 
     // Postfix expression calculation
-    calRpn() {
+    calcRpn() {
         if(!this.valid) return;
         let stack = [];
-        let reg = /^[0-9]+\.?[0-9]*$/;
         for(let i=0; i<this.rpnSeg.length; i++) {
-            let tmp = this.rpnSeg[i];
-            if(reg.test(this.rpnSeg[i])) {
+            if(ExpHandler.REG_NUMBER.test(this.rpnSeg[i])) {
                 stack.push(parseFloat(this.rpnSeg[i]));
             } else {
                 let x,y;
@@ -217,6 +221,7 @@ class ExpHandler {
         } else {
             this.valid = false;
             this.result = stack;
+            console.log('express is Not valid: ' + this.exp);
         }
         return this;
     }
@@ -224,7 +229,7 @@ class ExpHandler {
     // Expression calculation
     calc(exp) {
         if(exp) {
-            set(exp).trim().minus().segment().toRpn().calRpn();
+            this.set(exp).trim().minus().segment().toRpn().calRpn();
         } else {
             this.trim().minus().segment().toRpn().calRpn();
         }
@@ -236,7 +241,7 @@ class ExpHandler {
     }
 }
 
-
+ExpHandler.REG_MINUS = /\)|\d|\w/;
 ExpHandler.REG_NUMBER = /^(\+|-)?[0-9]+\.?[0-9]*$/;
 
 module.exports = ExpHandler;
