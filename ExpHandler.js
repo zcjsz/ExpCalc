@@ -178,8 +178,9 @@ class ExpHandler {
         }
 
         if(stack.length>0){
-            for(let j=0; j<stack.length; j++) {
-                out.push(stack[j]);
+            const stackLen = stack.length;
+            for(let j=0; j<stackLen; j++) {
+                out.push(stack.pop());
             }
         }
 
